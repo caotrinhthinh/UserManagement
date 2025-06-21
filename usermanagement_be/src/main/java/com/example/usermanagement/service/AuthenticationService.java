@@ -168,8 +168,8 @@ public class AuthenticationService {
     }
 
     private SignedJWT verifyToken(String token, boolean isRefresh) throws JOSEException, ParseException {
+        // Giải mã token và tạo trình xác thực chữ ký
         JWSVerifier verifier = new MACVerifier(SIGNER_KEY.getBytes());
-
         SignedJWT signedJWT = SignedJWT.parse(token);
 
         String tokenType = signedJWT.getJWTClaimsSet().getStringClaim("type");
@@ -186,8 +186,8 @@ public class AuthenticationService {
                         .toEpochMilli())
                 : signedJWT.getJWTClaimsSet().getExpirationTime();
 
+        // Kiểm tra chữ ký và hết hạn hay chưa
         var verified = signedJWT.verify(verifier);
-
         if (!(verified && expiryTime.after(new Date())))
             throw new AppException(ErrorCode.UNAUTHENTICATED);
 
