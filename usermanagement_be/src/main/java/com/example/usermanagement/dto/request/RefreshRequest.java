@@ -1,4 +1,4 @@
-package com.example.usermanagement.dto.response;
+package com.example.usermanagement.dto.request;
 
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -12,8 +12,6 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class AuthenticationResponse {
-    String accessToken;
-    String refreshToken;
-    boolean authenticated;
+public class RefreshRequest {
+    String token;
 }

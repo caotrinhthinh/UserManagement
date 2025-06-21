@@ -1,5 +1,6 @@
-package com.example.usermanagement.dto.response;
+package com.example.usermanagement.dto.request;
 
+import jakarta.validation.constraints.NotBlank;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -12,8 +13,7 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class AuthenticationResponse {
-    String accessToken;
-    String refreshToken;
-    boolean authenticated;
+public class LogoutRequest {
+    @NotBlank(message = "Token không được để trống")
+    String token;
 }

@@ -14,8 +14,11 @@ import org.springframework.util.CollectionUtils;
 
 import com.example.usermanagement.dto.request.AuthenticationRequest;
 import com.example.usermanagement.dto.request.IntrospectRequest;
+import com.example.usermanagement.dto.request.LogoutRequest;
+import com.example.usermanagement.dto.request.RefreshRequest;
 import com.example.usermanagement.dto.response.AuthenticationResponse;
 import com.example.usermanagement.dto.response.IntrospectResponse;
+import com.example.usermanagement.entity.InvalidatedToken;
 import com.example.usermanagement.entity.User;
 import com.example.usermanagement.exception.AppException;
 import com.example.usermanagement.exception.ErrorCode;
@@ -70,7 +73,6 @@ public class AuthenticationService {
     }
 
     public AuthenticationResponse authenticate(AuthenticationRequest request) {
-        // PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(10);
         var user = userRepository.findByUsername(request.getUsername())
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
@@ -79,21 +81,77 @@ public class AuthenticationService {
         if (!authenticated)
             throw new AppException(ErrorCode.UNAUTHENTICATED);
 
-        var token = generateToken(user);
+        String accessToken = generateToken(user, false);
+        String refreshToken = generateToken(user, true);
 
-        return AuthenticationResponse.builder().token(token).authenticated(true).build();
+        return AuthenticationResponse.builder()
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .authenticated(true)
+                .build();
     }
 
-    private String generateToken(User user) {
+    public void logout(LogoutRequest request) throws JOSEException, ParseException {
+        SignedJWT signToken = verifyToken(request.getToken(), true);
+
+        String tokenType = signToken.getJWTClaimsSet().getStringClaim("type");
+        if (!"refresh".equals(tokenType)) {
+            throw new AppException(ErrorCode.UNAUTHENTICATED); // Access token không được logout
+        }
+
+        String jit = signToken.getJWTClaimsSet().getJWTID();
+        Date expiryTime = signToken.getJWTClaimsSet().getExpirationTime();
+
+        InvalidatedToken invalidatedToken = InvalidatedToken.builder()
+                .id(jit)
+                .expiryTime(expiryTime)
+                .build();
+
+        invalidatedTokenRepository.save(invalidatedToken);
+    }
+
+    public AuthenticationResponse refreshToken(RefreshRequest request) throws ParseException, JOSEException {
+        var signedJWT = verifyToken(request.getToken(), true);
+
+        String tokenType = signedJWT.getJWTClaimsSet().getStringClaim("type");
+        if (!"refresh".equals(tokenType)) {
+            throw new AppException(ErrorCode.UNAUTHENTICATED); // Dùng access token để refresh là sai
+        }
+
+        var jit = signedJWT.getJWTClaimsSet().getJWTID();
+        var expiryTime = signedJWT.getJWTClaimsSet().getExpirationTime();
+
+        InvalidatedToken invalidatedToken = InvalidatedToken.builder().id(jit).expiryTime(expiryTime).build();
+
+        invalidatedTokenRepository.save(invalidatedToken);
+
+        var username = signedJWT.getJWTClaimsSet().getSubject();
+
+        var user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new AppException(ErrorCode.UNAUTHENTICATED));
+
+        String newAccessToken = generateToken(user, false);
+        String newRefreshToken = generateToken(user, true);
+
+        return AuthenticationResponse.builder()
+                .accessToken(newAccessToken)
+                .refreshToken(newRefreshToken)
+                .authenticated(true)
+                .build();
+    }
+
+    private String generateToken(User user, boolean isRefresh) {
         JWSHeader header = new JWSHeader(JWSAlgorithm.HS512);
 
         JWTClaimsSet jwtClaimsSet = new JWTClaimsSet.Builder()
                 .subject(user.getUsername())
                 .issuer("ctt.com")
                 .issueTime(new Date())
-                .expirationTime(new Date(Instant.now().plus(VALID_DURATION, ChronoUnit.SECONDS).toEpochMilli()))
+                .expirationTime(Date.from(
+                        Instant.now().plus(isRefresh ? REFRESHABLE_DURATION : VALID_DURATION, ChronoUnit.SECONDS)))
                 .jwtID(UUID.randomUUID().toString())
                 .claim("scope", buildScope(user))
+                .claim("type", isRefresh ? "refresh" : "access")
                 .build();
 
         Payload payload = new Payload(jwtClaimsSet.toJSONObject());
@@ -114,6 +172,11 @@ public class AuthenticationService {
 
         SignedJWT signedJWT = SignedJWT.parse(token);
 
+        String tokenType = signedJWT.getJWTClaimsSet().getStringClaim("type");
+        if (isRefresh && !"refresh".equals(tokenType) || !isRefresh && !"access".equals(tokenType)) {
+            throw new AppException(ErrorCode.UNAUTHENTICATED);
+        }
+
         Date expiryTime = (isRefresh)
                 ? new Date(signedJWT
                         .getJWTClaimsSet()
@@ -128,6 +191,7 @@ public class AuthenticationService {
         if (!(verified && expiryTime.after(new Date())))
             throw new AppException(ErrorCode.UNAUTHENTICATED);
 
+        // Nếu jti đã bị lưu trong DB -> token này không hợp lệ
         if (invalidatedTokenRepository.existsById(signedJWT.getJWTClaimsSet().getJWTID()))
             throw new AppException(ErrorCode.UNAUTHENTICATED);
 
