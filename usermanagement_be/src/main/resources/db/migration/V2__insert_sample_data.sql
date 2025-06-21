@@ -24,7 +24,7 @@ INSERT INTO role_permission (role_id, permission_id) VALUES
 -- Passwords are all hashed using BCrypt for "admin", "user", "manager"
 INSERT INTO users (id, username, password, first_name, last_name) VALUES 
   ('1', 'admin',   '$2a$10$Ism.mWMCdT3hRnTqmJeK3uhRO9U7W5VetGb.GGc6ysC3349nmwVqK', 'Admin', 'Root'),
-  ('2', 'user01',  '$2a$10$Ism.mWMCdT3hRnTqmJeK3uhRO9U7W5VetGb.GGc6ysC3349nmwVqK', 'User', 'One'), -- newPassword123
+  ('2', 'user01',  '$2a$10$Ism.mWMCdT3hRnTqmJeK3uhRO9U7W5VetGb.GGc6ysC3349nmwVqK', 'User', 'One'),
   ('3', 'manager', '$2a$10$Ism.mWMCdT3hRnTqmJeK3uhRO9U7W5VetGb.GGc6ysC3349nmwVqK', 'Manager', 'Boss');
 
 -- USER - ROLE mappings
