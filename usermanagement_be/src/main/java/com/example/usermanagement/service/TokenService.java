@@ -6,6 +6,7 @@ import java.util.Date;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import com.example.usermanagement.constant.TypeToken;
 import com.example.usermanagement.repository.InvalidatedTokenRepository;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSVerifier;
@@ -39,6 +40,7 @@ public class TokenService {
         if (invalidatedTokenRepository.existsById(signedJWT.getJWTClaimsSet().getJWTID()))
             return false;
 
-        return true;
+        String type = signedJWT.getJWTClaimsSet().getStringClaim("type");
+        return (TypeToken.ACCESS_TOKEN).equals(type);
     }
 }
