@@ -38,7 +38,7 @@ public class AdminController {
                 .build();
     }
 
-    @PostMapping("/createuser")
+    @PostMapping
     public ApiResponse<UserResponse> createUser(@RequestBody UserCreationRequest request) {
         return ApiResponse.<UserResponse>builder()
                 .result(adminService.createUser(request))
