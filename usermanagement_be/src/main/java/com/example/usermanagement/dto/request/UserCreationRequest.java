@@ -1,6 +1,7 @@
 package com.example.usermanagement.dto.request;
 
 import java.time.LocalDate;
+import java.util.Set;
 
 import com.example.usermanagement.validator.DobConstraint;
 
@@ -29,4 +30,6 @@ public class UserCreationRequest {
 
     @DobConstraint(min = 10, message = "INVALID_DOB")
     LocalDate dob;
+
+    private Set<Long> roles;
 }

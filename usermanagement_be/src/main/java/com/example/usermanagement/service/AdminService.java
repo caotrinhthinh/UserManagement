@@ -51,7 +51,11 @@ public class AdminService {
         user.setPassword(passwordEncoder.encode(request.getPassword()));
 
         HashSet<Role> roles = new HashSet<>();
-        roleRepository.findByName(PredefinedRole.USER_ROLE).ifPresent(roles::add);
+        if (request.getRoles() != null && !request.getRoles().isEmpty()) {
+            roles.addAll(roleRepository.findAllById(request.getRoles()));
+        } else {
+            roleRepository.findByName(PredefinedRole.USER_ROLE).ifPresent(roles::add);
+        }
 
         user.setRoles(roles);
 
