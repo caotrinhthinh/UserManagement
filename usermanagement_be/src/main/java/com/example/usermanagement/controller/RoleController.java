@@ -4,9 +4,12 @@ import java.util.List;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.usermanagement.dto.request.RoleRequest;
 import com.example.usermanagement.dto.response.ApiResponse;
 import com.example.usermanagement.dto.response.RoleResponse;
 import com.example.usermanagement.service.RoleService;
@@ -36,4 +39,14 @@ public class RoleController {
                 .result(roleService.getRoleById(id))
                 .build();
     }
+
+    @PostMapping
+    public ApiResponse<RoleResponse> createRole(@RequestBody RoleRequest request) {
+        return ApiResponse.<RoleResponse>builder()
+                .code(1000)
+                .message("Tạo vai trò thành công")
+                .result(roleService.createRole(request))
+                .build();
+    }
+
 }
